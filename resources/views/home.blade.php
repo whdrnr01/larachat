@@ -2,6 +2,6 @@
 
 @section('content')
     <div class="flex1 h-full">
-        <chat-component></chat-component>
+    <chat-component :current-user="{{ auth()->id() }}"></chat-component>
     </div>
 @endsection
