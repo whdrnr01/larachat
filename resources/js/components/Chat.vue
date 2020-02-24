@@ -2,13 +2,14 @@
     <div class="flex h-full">
         <ChatUserList 
             :current-user="currentUser"
+            :chat-with="chatWith"
             @updatedChatWith="updatedChatWith"
-        
         ></ChatUserList>
 
         <div v-if="chatWith" class="w-4/5 py-2 px-1 flex flex-col">
             <ChatArea
                 :chat-id="chatWith"
+                :messages="messages"
             ></ChatArea>
 
             <div class="flex-initial">
@@ -45,8 +46,16 @@
         data() {
             return {
                 chatWith: null,
-                text: ''
+                text: '',
+                messages: []
             }
+        },
+        created() {
+            window.Echo.private('chats').listen('MessageSent', e => {
+                if(e.message.to === this.currentUser && e.message.from === this.chatWith) {
+                    this.messages.push(e.message);
+                }
+            });
         },
         mounted() {
             console.log('Component mounted.')
@@ -54,15 +63,35 @@
         methods: {
             updatedChatWith(value) {
                 this.chatWith = value;
+                this.getMessages();
             },
+
+            getMessages() {
+                axios.get('/api/messages', {
+                    params: {
+                        to: this.chatWith,
+                        from: this.currentUser
+                    }
+                }).then(res => {
+                    // console.log(res);
+                    this.messages = res.data.messages;
+                })
+            },
+
             submit() {
                 if(this.text) {
                     axios.post('/api/messages', {
                         text: this.text,
                         to: this.chatWith,
                         from: this.currentUser
+                    }).then(res => {
+                        this.messages.push(res.data.message);
                     });
                 }
+
+                this.text = '';
+
+                
             }
         }
     }
